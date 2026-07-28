@@ -91,6 +91,8 @@
     --accent-soft: #3d2a47;
     --ok: #4fd68c;
     --danger: #ff8f9c;
+    --accent2: #8fb3ff;
+    --accent3: #ffe08f;
   }
 
   :root[data-theme="pasteleria"] {
@@ -102,6 +104,8 @@
     --accent-hover: #c94a68;
     --accent-soft: #fbe3ea;
     --ok: #6fa87a;
+    --accent2: #7ecbb0;
+    --accent3: #ffd66b;
   }
 
   :root[data-theme="cafe"] {
@@ -114,6 +118,107 @@
     --accent-hover: #5f3a20;
     --accent-soft: #ecdcc4;
     --ok: #5c8a5a;
+    --accent2: #c9974f;
+    --accent3: #b0473a;
+  }
+
+  /* ---- "Modo loco" para las 3 últimas paletas: Nocturno, Pastelería, Café ---- */
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) {
+    --loca: 1;
+  }
+
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) .panel {
+    border: 3px solid #ffffff;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.12), 0 10px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) button.primary,
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) button.secondary {
+    border: 2px solid #ffffff;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25), 0 6px 10px rgba(0, 0, 0, 0.18);
+  }
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) button.primary:active,
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) button.secondary:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.18);
+  }
+
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) button.primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) button.primary::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 7'%3E%3Cg fill='white'%3E%3Crect x='3' y='0' width='1' height='1'/%3E%3Crect x='3' y='1' width='1' height='1'/%3E%3Crect x='2' y='2' width='3' height='1'/%3E%3Crect x='0' y='3' width='7' height='1'/%3E%3Crect x='2' y='4' width='3' height='1'/%3E%3Crect x='3' y='5' width='1' height='1'/%3E%3Crect x='2' y='6' width='1' height='1'/%3E%3Crect x='4' y='6' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) h1 {
+    background-image: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3), var(--accent));
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: rainbowShift 6s ease-in-out infinite;
+  }
+  @keyframes rainbowShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) .panel--config h2 {
+    font-size: 1.3rem;
+    color: var(--accent);
+  }
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) .panel--input h2 {
+    font-size: 1.05rem;
+    color: var(--accent2);
+  }
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) .panel--process h2 {
+    font-size: 1.45rem;
+    color: var(--accent3);
+    transform: rotate(-2deg);
+  }
+  :root:is([data-theme="nocturno"], [data-theme="pasteleria"], [data-theme="cafe"]) .panel--result h2 {
+    font-size: 1rem;
+    color: var(--accent);
+  }
+
+  :root[data-theme="nocturno"] body {
+    background-image:
+      radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.18) 1.5px, transparent 2px),
+      radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.14) 1.5px, transparent 2px),
+      radial-gradient(circle at 40% 82%, rgba(255, 255, 255, 0.12) 1px, transparent 1.5px),
+      radial-gradient(circle at 85% 18%, rgba(255, 143, 192, 0.18) 1.5px, transparent 2px),
+      radial-gradient(circle at 55% 42%, rgba(143, 179, 255, 0.16) 1.5px, transparent 2px);
+    background-repeat: repeat;
+    background-size: 220px 220px, 260px 260px, 200px 200px, 300px 300px, 240px 240px;
+  }
+
+  :root[data-theme="pasteleria"] body {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(224, 96, 126, 0.06) 0px, rgba(224, 96, 126, 0.06) 12px,
+      rgba(126, 203, 176, 0.06) 12px, rgba(126, 203, 176, 0.06) 24px,
+      rgba(255, 214, 107, 0.06) 24px, rgba(255, 214, 107, 0.06) 36px,
+      transparent 36px, transparent 48px
+    );
+  }
+
+  :root[data-theme="cafe"] body {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      rgba(122, 75, 44, 0.07) 0px, rgba(122, 75, 44, 0.07) 10px,
+      rgba(201, 151, 79, 0.07) 10px, rgba(201, 151, 79, 0.07) 20px,
+      transparent 20px, transparent 30px
+    );
   }
 
   @media (prefers-color-scheme: dark) {
@@ -417,7 +522,7 @@
     <div class="theme-picker" id="themePicker" title="Elegir paleta de color"></div>
   </div>
 
-  <div class="panel">
+  <div class="panel panel--config">
     <h2>1. Configuración</h2>
     <div class="row">
       <div class="field">
@@ -451,10 +556,11 @@
       <div class="field">
         <label for="speedMode">Modo de velocidad</label>
         <select id="speedMode">
-          <option value="preciso">Preciso (documento completo, recomendado)</option>
-          <option value="rapido">Rápido (por fragmentos, para documentos largos)</option>
+          <option value="automatico">Automático (recomendado)</option>
+          <option value="preciso">Preciso (forzar documento completo)</option>
+          <option value="rapido">Rápido (forzar por fragmentos)</option>
         </select>
-        <div class="hint">"Rápido" divide la transcripción en fragmentos más pequeños para que cada llamada al modelo sea más corta y el resultado llegue antes en documentos largos.</div>
+        <div class="hint">"Automático" decide sola: documentos cortos se procesan completos (más preciso), documentos largos se dividen en fragmentos (más rápido). Puedes forzar un modo manualmente si lo prefieres.</div>
       </div>
       <div class="field" id="chunkSizeField" hidden>
         <label for="chunkSize">Tamaño de fragmento (caracteres)</label>
@@ -472,7 +578,7 @@
     </details>
   </div>
 
-  <div class="panel">
+  <div class="panel panel--input">
     <h2>2. Transcripción de entrada</h2>
     <div class="field" id="dropZone">
       <label for="inputText">Pega el texto, arrástralo aquí o carga un archivo .txt</label>
@@ -487,7 +593,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel panel--process">
     <h2>3. Procesar</h2>
     <div class="actions">
       <button type="button" class="primary" id="processBtn">Etiquetar transcripción</button>
@@ -510,7 +616,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel panel--result">
     <h2>4. Resultado</h2>
     <textarea id="output" readonly placeholder="El resultado etiquetado aparecerá aquí..."></textarea>
     <div class="output-actions actions">
@@ -578,7 +684,7 @@ function loadSettings() {
   $('patName').value = localStorage.getItem(STORAGE_KEYS.patName) || 'Paciente Osiris';
   $('model').value = localStorage.getItem(STORAGE_KEYS.model) || 'claude-haiku-4-5-20251001';
   $('removeTimestamps').checked = localStorage.getItem(STORAGE_KEYS.removeTimestamps) === 'true';
-  $('speedMode').value = localStorage.getItem(STORAGE_KEYS.speedMode) || 'preciso';
+  $('speedMode').value = localStorage.getItem(STORAGE_KEYS.speedMode) || 'automatico';
   $('chunkSize').value = localStorage.getItem(STORAGE_KEYS.chunkSize) || '6000';
   $('chunkSizeField').hidden = $('speedMode').value !== 'rapido';
   buildThemePicker();
@@ -889,8 +995,20 @@ function estimateRounds(inputText, maxTokens) {
   return Math.max(1, Math.ceil(estimatedOutputTokens / maxTokens));
 }
 
+const AUTO_MODE_THRESHOLD_CHARS = 25000;
+
 async function labelTranscript({ model, systemPromptBase, inputText, maxTokens, accessCode, speedMode, chunkSize }) {
-  if (speedMode === 'rapido') {
+  const effectiveMode = speedMode === 'automatico'
+    ? (inputText.length > AUTO_MODE_THRESHOLD_CHARS ? 'rapido' : 'preciso')
+    : speedMode;
+
+  if (speedMode === 'automatico') {
+    updateProgress(0, 1, effectiveMode === 'rapido'
+      ? 'Modo automático: documento largo, usando fragmentos...'
+      : 'Modo automático: documento corto, procesando completo...');
+  }
+
+  if (effectiveMode === 'rapido') {
     const chunks = splitIntoChunks(inputText, chunkSize);
     const total = chunks.length;
     let fullText = '';
