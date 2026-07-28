@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Marce's Transcrypt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Baloo+2:wght@400;500;600;700&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #fff7fa;
@@ -17,6 +20,14 @@
     --danger: #e0447a;
     --ok: #35a877;
     --radius: 18px;
+    --font-heading: 'Mochiy Pop One', 'Fredoka', sans-serif;
+    --font-body: 'Baloo 2', sans-serif;
+  }
+
+  /* El resto de las paletas usan Fredoka para títulos; solo la Kawaii
+     rosa (por defecto, sin data-theme) usa Mochiy Pop One. */
+  :root[data-theme] {
+    --font-heading: 'Fredoka', sans-serif;
   }
 
   :root[data-theme="lavanda"] {
@@ -83,7 +94,7 @@
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-family: var(--font-body);
     background: var(--bg);
     color: var(--text);
     line-height: 1.5;
@@ -103,7 +114,9 @@
     margin-bottom: 6px;
   }
   h1 {
-    font-size: 1.7rem;
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 400;
     margin: 0 0 4px;
     display: flex;
     align-items: center;
@@ -148,12 +161,13 @@
     transition: background 0.25s ease, border-color 0.25s ease;
   }
   .panel h2 {
+    font-family: var(--font-heading);
     font-size: 0.85rem;
     margin: 0 0 14px;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    font-weight: 700;
+    font-weight: 400;
   }
   .row {
     display: grid;
@@ -261,20 +275,51 @@
     min-height: 320px;
   }
   .output-actions { margin-top: 10px; }
-  .spotify-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 0.88rem;
-    padding: 8px 14px;
-    border-radius: 999px;
+  .spotify-embed {
+    margin-top: 16px;
+    border-radius: 14px;
+    overflow: hidden;
+    line-height: 0;
+  }
+  .spotify-embed iframe {
+    display: block;
+    width: 100%;
+    border: 0;
+  }
+  .busy-panel {
+    margin-top: 14px;
+    padding: 18px 20px;
+    border-radius: 14px;
     background: var(--accent-soft);
     border: 1px solid var(--border);
+    text-align: center;
   }
-  .spotify-link:hover { border-color: var(--accent); }
+  .busy-step {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    font-size: 0.95rem;
+    color: var(--text);
+    margin-bottom: 12px;
+    transition: opacity 0.5s ease;
+  }
+  .haiku-box {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .haiku {
+    margin: 0;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    white-space: pre-line;
+    max-width: 480px;
+    line-height: 1.7;
+  }
+  .haiku.visible { opacity: 1; }
   footer {
     text-align: center;
     color: var(--muted);
@@ -331,9 +376,9 @@
     <details>
       <summary>Opciones avanzadas</summary>
       <div class="field" style="margin-top:10px;">
-        <label for="maxTokens">Máximo de tokens de salida</label>
+        <label for="maxTokens">Tokens de salida por llamada</label>
         <input type="number" id="maxTokens" value="8000" min="512" step="512">
-        <div class="hint">Auméntalo si tu transcripción es muy larga y el resultado se corta antes de terminar (tope de 8000).</div>
+        <div class="hint">Tope de 8000 por llamada al modelo. Si la transcripción es muy larga, la app continúa automáticamente en llamadas adicionales hasta completarla (hasta 6 continuaciones).</div>
       </div>
     </details>
   </div>
@@ -357,9 +402,18 @@
     <h2>3. Procesar</h2>
     <div class="actions">
       <button type="button" class="primary" id="processBtn">Etiquetar transcripción</button>
-      <a class="spotify-link" id="spotifyLink" href="https://open.spotify.com/playlist/6AuKdzUEpokgfoJgfZZdO4?si=wT1zwE0TTeKd3ng98otqhg" target="_blank" rel="noopener">♪ Playlist para concentrarte</a>
     </div>
     <div id="status"></div>
+    <div class="busy-panel" id="busyPanel" hidden>
+      <div class="busy-step" id="busyStep">Preparando...</div>
+      <div class="haiku-box"><p class="haiku" id="haikuText"></p></div>
+    </div>
+    <div class="spotify-embed">
+      <iframe src="https://open.spotify.com/embed/playlist/6AuKdzUEpokgfoJgfZZdO4?utm_source=generator&theme=0"
+        height="152" allowfullscreen="" loading="lazy"
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+        title="Playlist de Spotify para concentrarte"></iframe>
+    </div>
   </div>
 
   <div class="panel">
@@ -560,6 +614,137 @@ pero utiliza esta opción únicamente cuando exista una ambigüedad real.
 11. Devuelve exclusivamente la conversación etiquetada, sin comentarios adicionales, sin explicaciones, sin bloques de código ni texto introductorio.`;
 }
 
+const HAIKUS = [
+  'Voz que se posa\nsobre el silencio quieto—\nalguien la recibe.',
+  'Entre dos nombres\nla conversación respira\ny encuentra su cauce.',
+  'Palabra a palabra,\nel orden se hace refugio\ny nadie se pierde.',
+  'Pausa que escucha,\npregunta que se demora—\nasí crece el vínculo.',
+  'Un hilo de tiempo\nune lo dicho y quien dice:\nla escucha lo teje.',
+  'Nombrar con cuidado\nlo que antes no tenía\nforma ni lugar.',
+  'Detrás de la duda,\nuna certeza pequeña\nva tomando forma.',
+  'El texto se ordena\ncomo se ordena el aire\ndespués de la lluvia.',
+  'Quien habla, confía;\nquien etiqueta, sostiene\ncon manos ligeras.',
+  'Todo lo dicho\nmerece su propio nombre\ny un poco de calma.',
+];
+
+const STEP_MESSAGES = [
+  'Leyendo tu transcripción con calma...',
+  'Reconociendo el estilo de cada voz...',
+  'Distinguiendo preguntas de respuestas...',
+  'Etiquetando cada intervención...',
+  'Cuidando el orden exacto del diálogo...',
+  'Puliendo los últimos detalles...',
+];
+
+let haikuTimer = null;
+let stepTimer = null;
+
+function stopBusyRotations() {
+  if (haikuTimer) { clearTimeout(haikuTimer); haikuTimer = null; }
+  if (stepTimer) { clearInterval(stepTimer); stepTimer = null; }
+  $('haikuText').classList.remove('visible');
+}
+
+function startHaikuRotation() {
+  const el = $('haikuText');
+  let idx = Math.floor(Math.random() * HAIKUS.length);
+  function showNext() {
+    el.classList.remove('visible');
+    setTimeout(() => {
+      el.textContent = HAIKUS[idx];
+      idx = (idx + 1) % HAIKUS.length;
+      void el.offsetWidth; // fuerza reflow para reiniciar la transición
+      el.classList.add('visible');
+      haikuTimer = setTimeout(showNext, 5000);
+    }, 500);
+  }
+  showNext();
+}
+
+function startStepRotation() {
+  const el = $('busyStep');
+  let idx = 0;
+  el.textContent = STEP_MESSAGES[0];
+  stepTimer = setInterval(() => {
+    idx = (idx + 1) % STEP_MESSAGES.length;
+    el.style.opacity = 0;
+    setTimeout(() => {
+      el.textContent = STEP_MESSAGES[idx];
+      el.style.opacity = 1;
+    }, 400);
+  }, 4500);
+}
+
+function setBusyStep(msg) {
+  const el = $('busyStep');
+  el.style.opacity = 0;
+  setTimeout(() => {
+    el.textContent = msg;
+    el.style.opacity = 1;
+  }, 200);
+}
+
+function showBusyPanel() {
+  $('busyPanel').hidden = false;
+  startHaikuRotation();
+  startStepRotation();
+}
+
+function hideBusyPanel() {
+  $('busyPanel').hidden = true;
+  stopBusyRotations();
+}
+
+async function callProxyOnce(model, systemPrompt, messages, maxTokens, accessCode) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (accessCode) headers['X-App-Access-Code'] = accessCode;
+
+  const response = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ model, max_tokens: maxTokens, system: systemPrompt, messages }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const msg = (data && data.error && (data.error.message || data.error)) || ('Error HTTP ' + response.status);
+    throw new Error(msg);
+  }
+
+  const text = (data.content || []).map(block => block.text || '').join('');
+  return { text, stopReason: data.stop_reason };
+}
+
+const MAX_CONTINUATIONS = 6;
+
+async function labelTranscript({ model, systemPrompt, inputText, maxTokens, accessCode }) {
+  let messages = [{ role: 'user', content: inputText }];
+  let fullText = '';
+
+  for (let round = 1; round <= MAX_CONTINUATIONS; round++) {
+    if (round === 1) {
+      setBusyStep(STEP_MESSAGES[0]);
+    } else {
+      setBusyStep(`La transcripción es larga: continuando donde quedamos (parte ${round})...`);
+    }
+
+    const { text, stopReason } = await callProxyOnce(model, systemPrompt, messages, maxTokens, accessCode);
+    fullText += text;
+
+    if (stopReason !== 'max_tokens') {
+      return fullText;
+    }
+
+    messages = [
+      { role: 'user', content: inputText },
+      { role: 'assistant', content: fullText },
+    ];
+  }
+
+  throw new Error('El resultado sigue siendo demasiado largo tras varias continuaciones automáticas. Procesa la transcripción por partes más cortas.');
+}
+
 $('processBtn').addEventListener('click', async () => {
   saveSettings();
 
@@ -581,46 +766,18 @@ $('processBtn').addEventListener('click', async () => {
   const systemPrompt = buildSystemPrompt(profName, patName, removeTimestamps);
 
   $('processBtn').disabled = true;
-  setStatus('Procesando con ' + model + '...', 'busy');
+  setStatus('');
   $('output').value = '';
+  showBusyPanel();
 
   try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (accessCode) headers['X-App-Access-Code'] = accessCode;
-
-    const response = await fetch(PROXY_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: model,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [
-          { role: 'user', content: inputText }
-        ],
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const msg = (data && data.error && (data.error.message || data.error)) || ('Error HTTP ' + response.status);
-      setStatus('Error: ' + msg, 'error');
-      $('processBtn').disabled = false;
-      return;
-    }
-
-    const text = (data.content || []).map(block => block.text || '').join('');
-    $('output').value = text;
-
-    if (data.stop_reason === 'max_tokens') {
-      setStatus('Completado, pero el resultado pudo haberse cortado (límite de tokens alcanzado). Aumenta "Máximo de tokens de salida" y vuelve a intentar, o procesa por fragmentos.', 'error');
-    } else {
-      setStatus('Listo.', 'ok');
-    }
+    const fullText = await labelTranscript({ model, systemPrompt, inputText, maxTokens, accessCode });
+    $('output').value = fullText;
+    setStatus('Listo.', 'ok');
   } catch (err) {
-    setStatus('Error de red o CORS: ' + err.message, 'error');
+    setStatus('Error: ' + err.message, 'error');
   } finally {
+    hideBusyPanel();
     $('processBtn').disabled = false;
   }
 });
