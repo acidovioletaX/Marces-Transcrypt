@@ -236,6 +236,17 @@
   button.secondary:hover { border-color: var(--accent); }
   .file-btn { display: inline-block; }
   #fileInput { display: none; }
+  #dropZone {
+    border-radius: 14px;
+    transition: background 0.15s ease;
+  }
+  #dropZone.dragging textarea {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  #dropZone.dragging {
+    background: var(--accent-soft);
+  }
   #status {
     margin-top: 12px;
     font-size: 0.88rem;
@@ -329,9 +340,9 @@
 
   <div class="panel">
     <h2>2. Transcripción de entrada</h2>
-    <div class="field">
-      <label for="inputText">Pega el texto o carga un archivo .txt</label>
-      <textarea id="inputText" rows="14" placeholder="Pega aquí la transcripción sin etiquetas de interlocutor..."></textarea>
+    <div class="field" id="dropZone">
+      <label for="inputText">Pega el texto, arrástralo aquí o carga un archivo .txt</label>
+      <textarea id="inputText" rows="14" placeholder="Pega aquí la transcripción sin etiquetas de interlocutor, o arrastra un archivo .txt..."></textarea>
     </div>
     <div class="actions">
       <span class="file-btn">
@@ -346,7 +357,7 @@
     <h2>3. Procesar</h2>
     <div class="actions">
       <button type="button" class="primary" id="processBtn">Etiquetar transcripción</button>
-      <a class="spotify-link" id="spotifyLink" href="#" target="_blank" rel="noopener">♪ Playlist para concentrarte</a>
+      <a class="spotify-link" id="spotifyLink" href="https://open.spotify.com/playlist/6AuKdzUEpokgfoJgfZZdO4?si=wT1zwE0TTeKd3ng98otqhg" target="_blank" rel="noopener">♪ Playlist para concentrarte</a>
     </div>
     <div id="status"></div>
   </div>
@@ -428,12 +439,39 @@ function saveSettings() {
 
 loadSettings();
 
-$('fileInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
+function loadTextFile(file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (ev) => { $('inputText').value = ev.target.result; };
   reader.readAsText(file, 'UTF-8');
+}
+
+$('fileInput').addEventListener('change', (e) => {
+  loadTextFile(e.target.files[0]);
+});
+
+const dropZone = $('dropZone');
+['dragenter', 'dragover'].forEach(evt => {
+  dropZone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.add('dragging');
+  });
+});
+['dragleave', 'drop'].forEach(evt => {
+  dropZone.addEventListener(evt, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove('dragging');
+  });
+});
+dropZone.addEventListener('drop', (e) => {
+  loadTextFile(e.dataTransfer.files && e.dataTransfer.files[0]);
+});
+
+// Evita que el navegador abra el archivo si se suelta fuera de la zona.
+['dragover', 'drop'].forEach(evt => {
+  window.addEventListener(evt, (e) => e.preventDefault());
 });
 
 $('clearBtn').addEventListener('click', () => {
