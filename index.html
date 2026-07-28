@@ -364,8 +364,8 @@
 </div>
 
 <script>
-// Reemplaza esta URL por la de tu Worker desplegado (ver worker/README o el README principal).
-const WORKER_URL = 'https://marces-transcrypt-proxy.YOUR-SUBDOMAIN.workers.dev';
+// Reemplaza esta URL por la del servicio de Cloud Run desplegado (ver README, sección GCP).
+const PROXY_URL = 'https://marces-transcrypt-proxy-924631262984.us-central1.run.app';
 
 const $ = (id) => document.getElementById(id);
 
@@ -533,8 +533,8 @@ $('processBtn').addEventListener('click', async () => {
   const maxTokens = Math.min(parseInt($('maxTokens').value, 10) || 8000, 8000);
   const accessCode = $('accessCode').value.trim();
 
-  if (WORKER_URL.includes('YOUR-SUBDOMAIN')) {
-    setStatus('Falta configurar WORKER_URL en el código con la URL real del proxy desplegado.', 'error');
+  if (PROXY_URL.includes('YOUR-HASH')) {
+    setStatus('Falta configurar PROXY_URL en el código con la URL real del servicio de Cloud Run desplegado.', 'error');
     return;
   }
   if (!profName || !patName) { setStatus('Debes indicar ambas etiquetas de interlocutor.', 'error'); return; }
@@ -550,7 +550,7 @@ $('processBtn').addEventListener('click', async () => {
     const headers = { 'Content-Type': 'application/json' };
     if (accessCode) headers['X-App-Access-Code'] = accessCode;
 
-    const response = await fetch(WORKER_URL, {
+    const response = await fetch(PROXY_URL, {
       method: 'POST',
       headers,
       body: JSON.stringify({
