@@ -30,6 +30,23 @@
     --font-heading: 'Fredoka', sans-serif;
   }
 
+  /* En las paletas alternativas los títulos son más grandes, más gruesos
+     y con un toque juguetón (color e inclinación); la Kawaii rosa por
+     defecto conserva su estilo original tal cual estaba. */
+  :root[data-theme] h1 {
+    font-weight: 700;
+    font-size: 2rem;
+    color: var(--accent);
+  }
+  :root[data-theme] .panel h2 {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    display: inline-block;
+    transform: rotate(-1deg);
+  }
+
   :root[data-theme="lavanda"] {
     --bg: #f8f5ff;
     --border: #e2d6ff;
@@ -74,6 +91,29 @@
     --accent-soft: #3d2a47;
     --ok: #4fd68c;
     --danger: #ff8f9c;
+  }
+
+  :root[data-theme="pasteleria"] {
+    --bg: #fff8f4;
+    --border: #f6d9df;
+    --text: #5b3a3f;
+    --muted: #a9838c;
+    --accent: #e0607e;
+    --accent-hover: #c94a68;
+    --accent-soft: #fbe3ea;
+    --ok: #6fa87a;
+  }
+
+  :root[data-theme="cafe"] {
+    --bg: #f7f0e6;
+    --panel: #fffaf3;
+    --border: #dcc6a8;
+    --text: #4a3524;
+    --muted: #93765c;
+    --accent: #7a4b2c;
+    --accent-hover: #5f3a20;
+    --accent-soft: #ecdcc4;
+    --ok: #5c8a5a;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -299,7 +339,41 @@
     font-weight: 400;
     font-size: 0.95rem;
     color: var(--text);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
+    transition: opacity 0.5s ease;
+  }
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0 10px;
+  }
+  .progress-track {
+    flex: 1;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
+  .progress-pct {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--muted);
+    min-width: 36px;
+    text-align: right;
+  }
+  .busy-substep {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+    min-height: 1.1em;
     transition: opacity 0.5s ease;
   }
   .haiku-box {
@@ -373,6 +447,21 @@
         <div class="hint">Esta app no pide ni almacena ninguna API key: la conexión con el modelo está resuelta por un servicio propio (proxy) configurado en la arquitectura de la app.</div>
       </div>
     </div>
+    <div class="row">
+      <div class="field">
+        <label for="speedMode">Modo de velocidad</label>
+        <select id="speedMode">
+          <option value="preciso">Preciso (documento completo, recomendado)</option>
+          <option value="rapido">Rápido (por fragmentos, para documentos largos)</option>
+        </select>
+        <div class="hint">"Rápido" divide la transcripción en fragmentos más pequeños para que cada llamada al modelo sea más corta y el resultado llegue antes en documentos largos.</div>
+      </div>
+      <div class="field" id="chunkSizeField" hidden>
+        <label for="chunkSize">Tamaño de fragmento (caracteres)</label>
+        <input type="number" id="chunkSize" value="6000" min="1500" step="500">
+        <div class="hint">Fragmentos más pequeños son más rápidos por llamada, pero generan más llamadas en total.</div>
+      </div>
+    </div>
     <details>
       <summary>Opciones avanzadas</summary>
       <div class="field" style="margin-top:10px;">
@@ -406,11 +495,16 @@
     <div id="status"></div>
     <div class="busy-panel" id="busyPanel" hidden>
       <div class="busy-step" id="busyStep">Preparando...</div>
+      <div class="progress-row">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+      <div class="busy-substep" id="busySubStep"></div>
       <div class="haiku-box"><p class="haiku" id="haikuText"></p></div>
     </div>
     <div class="spotify-embed">
       <iframe src="https://open.spotify.com/embed/playlist/6AuKdzUEpokgfoJgfZZdO4?utm_source=generator&theme=0"
-        height="152" allowfullscreen="" loading="lazy"
+        height="500" allowfullscreen="" loading="lazy"
         allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
         title="Playlist de Spotify para concentrarte"></iframe>
     </div>
@@ -440,6 +534,8 @@ const STORAGE_KEYS = {
   model: 'tl_model',
   removeTimestamps: 'tl_removeTimestamps',
   theme: 'tl_theme',
+  speedMode: 'tl_speedMode',
+  chunkSize: 'tl_chunkSize',
 };
 
 const THEMES = [
@@ -448,6 +544,8 @@ const THEMES = [
   { id: 'menta', label: 'Menta', swatch: '#34b789' },
   { id: 'durazno', label: 'Durazno', swatch: '#ff9448' },
   { id: 'nocturno', label: 'Nocturno', swatch: '#3d2a47' },
+  { id: 'pasteleria', label: 'Pastelería', swatch: '#e0607e' },
+  { id: 'cafe', label: 'Café', swatch: '#7a4b2c' },
 ];
 
 function applyTheme(themeId) {
@@ -480,6 +578,9 @@ function loadSettings() {
   $('patName').value = localStorage.getItem(STORAGE_KEYS.patName) || 'Paciente Osiris';
   $('model').value = localStorage.getItem(STORAGE_KEYS.model) || 'claude-haiku-4-5-20251001';
   $('removeTimestamps').checked = localStorage.getItem(STORAGE_KEYS.removeTimestamps) === 'true';
+  $('speedMode').value = localStorage.getItem(STORAGE_KEYS.speedMode) || 'preciso';
+  $('chunkSize').value = localStorage.getItem(STORAGE_KEYS.chunkSize) || '6000';
+  $('chunkSizeField').hidden = $('speedMode').value !== 'rapido';
   buildThemePicker();
   applyTheme(localStorage.getItem(STORAGE_KEYS.theme) || 'kawaii');
 }
@@ -489,9 +590,15 @@ function saveSettings() {
   localStorage.setItem(STORAGE_KEYS.patName, $('patName').value.trim());
   localStorage.setItem(STORAGE_KEYS.model, $('model').value);
   localStorage.setItem(STORAGE_KEYS.removeTimestamps, $('removeTimestamps').checked);
+  localStorage.setItem(STORAGE_KEYS.speedMode, $('speedMode').value);
+  localStorage.setItem(STORAGE_KEYS.chunkSize, $('chunkSize').value);
 }
 
 loadSettings();
+
+$('speedMode').addEventListener('change', () => {
+  $('chunkSizeField').hidden = $('speedMode').value !== 'rapido';
+});
 
 function loadTextFile(file) {
   if (!file) return;
@@ -611,27 +718,35 @@ ${patName}:
 
 pero utiliza esta opción únicamente cuando exista una ambigüedad real.
 
-11. Devuelve exclusivamente la conversación etiquetada, sin comentarios adicionales, sin explicaciones, sin bloques de código ni texto introductorio.`;
+11. Devuelve exclusivamente la conversación etiquetada, sin comentarios adicionales, sin explicaciones, sin bloques de código ni texto introductorio.
+
+IMPORTANTE SOBRE FIDELIDAD: tu salida debe contener el contenido COMPLETO del texto recibido, intervención por intervención, en su totalidad. No omitas líneas, no condenses varias intervenciones en una, no resumas ni parafrasees el contenido (solo se permite corregir puntuación evidente). La única transformación permitida sobre el texto original es anteponer la etiqueta del interlocutor a cada intervención, y quitar las marcas de tiempo si así se solicitó. Todo lo demás debe quedar exactamente igual que en el original.`;
 }
 
+// Haikus clásicos (recreaciones propias, dominio público por antigüedad) y
+// frases anónimas breves. No están pensados para relacionarse con el tema de
+// la app: solo acompañan la espera con algo bonito para leer.
 const HAIKUS = [
-  'Voz que se posa\nsobre el silencio quieto—\nalguien la recibe.',
-  'Entre dos nombres\nla conversación respira\ny encuentra su cauce.',
-  'Palabra a palabra,\nel orden se hace refugio\ny nadie se pierde.',
-  'Pausa que escucha,\npregunta que se demora—\nasí crece el vínculo.',
-  'Un hilo de tiempo\nune lo dicho y quien dice:\nla escucha lo teje.',
-  'Nombrar con cuidado\nlo que antes no tenía\nforma ni lugar.',
-  'Detrás de la duda,\nuna certeza pequeña\nva tomando forma.',
-  'El texto se ordena\ncomo se ordena el aire\ndespués de la lluvia.',
-  'Quien habla, confía;\nquien etiqueta, sostiene\ncon manos ligeras.',
-  'Todo lo dicho\nmerece su propio nombre\ny un poco de calma.',
+  'Un viejo estanque—\nsalta una rana adentro,\nsuena el agua.',
+  'Sobre la rama seca\nse posa un cuervo—\natardecer de otoño.',
+  'Ni un solo sonido—\nla cigarra se hunde\nen la roca.',
+  'El caracol sube el monte,\nmuy despacio,\npero sube.',
+  'Este mundo de rocío\nes solo un mundo de rocío—\ny sin embargo, y sin embargo.',
+  'Nubes de flores:\n¿será la campana de un templo\nla que suena a lo lejos?',
+  'Ligero y liviano,\nel monte al anochecer\nviste su niebla.',
+  'La nieve de ayer,\nque cayó como lluvia—\n¿dónde está ahora?',
+  'Un viaje de mil leguas\ncomienza siempre\ncon un solo paso.',
+  'Donde hay amor,\nno hay verdadera oscuridad.',
+  'Un buen oyente\nes, casi siempre,\ntambién un buen sanador.',
+  'La quietud también\nes una forma\nde fuerza.',
+  'Lo que se nombra\ncon cuidado,\nse sostiene.',
+  'No hay camino:\nse hace camino\nal andar.',
 ];
 
 const STEP_MESSAGES = [
-  'Leyendo tu transcripción con calma...',
+  'Leyendo con calma...',
   'Reconociendo el estilo de cada voz...',
   'Distinguiendo preguntas de respuestas...',
-  'Etiquetando cada intervención...',
   'Cuidando el orden exacto del diálogo...',
   'Puliendo los últimos detalles...',
 ];
@@ -655,14 +770,14 @@ function startHaikuRotation() {
       idx = (idx + 1) % HAIKUS.length;
       void el.offsetWidth; // fuerza reflow para reiniciar la transición
       el.classList.add('visible');
-      haikuTimer = setTimeout(showNext, 5000);
+      haikuTimer = setTimeout(showNext, 20000);
     }, 500);
   }
   showNext();
 }
 
 function startStepRotation() {
-  const el = $('busyStep');
+  const el = $('busySubStep');
   let idx = 0;
   el.textContent = STEP_MESSAGES[0];
   stepTimer = setInterval(() => {
@@ -675,17 +790,22 @@ function startStepRotation() {
   }, 4500);
 }
 
-function setBusyStep(msg) {
-  const el = $('busyStep');
-  el.style.opacity = 0;
+function updateProgress(current, total, label) {
+  const pct = total > 0 ? Math.min(100, Math.max(0, Math.round((current / total) * 100))) : 0;
+  const stepEl = $('busyStep');
+  stepEl.style.opacity = 0;
   setTimeout(() => {
-    el.textContent = msg;
-    el.style.opacity = 1;
+    stepEl.textContent = label;
+    stepEl.style.opacity = 1;
   }, 200);
+  $('progressFill').style.width = pct + '%';
+  $('progressPct').textContent = pct + '%';
 }
 
 function showBusyPanel() {
   $('busyPanel').hidden = false;
+  $('progressFill').style.width = '0%';
+  $('progressPct').textContent = '0%';
   startHaikuRotation();
   startStepRotation();
 }
@@ -693,6 +813,35 @@ function showBusyPanel() {
 function hideBusyPanel() {
   $('busyPanel').hidden = true;
   stopBusyRotations();
+}
+
+function roughWordCount(text) {
+  return (text.match(/\S+/g) || []).length;
+}
+
+// Divide el texto en fragmentos sin cortar ninguna línea a la mitad,
+// para no arriesgar la fidelidad del contenido original.
+function splitIntoChunks(text, maxChars) {
+  const lines = text.split('\n');
+  const chunks = [];
+  let current = [];
+  let currentLen = 0;
+  for (const line of lines) {
+    if (current.length > 0 && currentLen + line.length + 1 > maxChars) {
+      chunks.push(current.join('\n'));
+      current = [];
+      currentLen = 0;
+    }
+    current.push(line);
+    currentLen += line.length + 1;
+  }
+  if (current.length) chunks.push(current.join('\n'));
+  return chunks;
+}
+
+function lastNonEmptyLines(text, n) {
+  const lines = text.split('\n').filter(l => l.trim() !== '');
+  return lines.slice(-n).join('\n');
 }
 
 async function callProxyOnce(model, systemPrompt, messages, maxTokens, accessCode) {
@@ -718,31 +867,83 @@ async function callProxyOnce(model, systemPrompt, messages, maxTokens, accessCod
 
 const MAX_CONTINUATIONS = 6;
 
-async function labelTranscript({ model, systemPrompt, inputText, maxTokens, accessCode }) {
-  let messages = [{ role: 'user', content: inputText }];
+// Procesa un solo "trozo" de texto (el documento completo, o un fragmento
+// en modo rápido), continuando automáticamente si el modelo se corta por
+// límite de tokens, hasta MAX_CONTINUATIONS rondas.
+async function runWithContinuation({ model, systemPrompt, userContent, maxTokens, accessCode, onRound }) {
   let fullText = '';
-
   for (let round = 1; round <= MAX_CONTINUATIONS; round++) {
-    if (round === 1) {
-      setBusyStep(STEP_MESSAGES[0]);
-    } else {
-      setBusyStep(`La transcripción es larga: continuando donde quedamos (parte ${round})...`);
-    }
-
+    if (onRound) onRound(round);
+    const messages = round === 1
+      ? [{ role: 'user', content: userContent }]
+      : [{ role: 'user', content: userContent }, { role: 'assistant', content: fullText }];
     const { text, stopReason } = await callProxyOnce(model, systemPrompt, messages, maxTokens, accessCode);
     fullText += text;
+    if (stopReason !== 'max_tokens') return fullText;
+  }
+  throw new Error('Esta parte del texto es demasiado larga incluso tras varias continuaciones automáticas. Prueba el modo "Rápido" o reduce el tamaño de fragmento.');
+}
 
-    if (stopReason !== 'max_tokens') {
-      return fullText;
+function estimateRounds(inputText, maxTokens) {
+  const estimatedOutputTokens = Math.ceil(inputText.length / 3.2) + 200;
+  return Math.max(1, Math.ceil(estimatedOutputTokens / maxTokens));
+}
+
+async function labelTranscript({ model, systemPromptBase, inputText, maxTokens, accessCode, speedMode, chunkSize }) {
+  if (speedMode === 'rapido') {
+    const chunks = splitIntoChunks(inputText, chunkSize);
+    const total = chunks.length;
+    let fullText = '';
+    let carryOver = '';
+
+    for (let i = 0; i < total; i++) {
+      updateProgress(i, total, `Fragmento ${i + 1} de ${total}`);
+
+      let sys = systemPromptBase;
+      if (carryOver) {
+        sys += `\n\nContexto de continuidad (últimas líneas ya etiquetadas del fragmento anterior de este MISMO documento; úsalas solo para mantener consistente la identificación de quién es quién, no las repitas en tu respuesta):\n${carryOver}`;
+      }
+
+      const chunkResult = await runWithContinuation({
+        model,
+        systemPrompt: sys,
+        userContent: chunks[i],
+        maxTokens,
+        accessCode,
+        onRound: (round) => {
+          if (round === 1) {
+            updateProgress(i, total, `Fragmento ${i + 1} de ${total}`);
+          } else {
+            updateProgress(i, total, `Fragmento ${i + 1} de ${total}: continuando (parte ${round})...`);
+          }
+        },
+      });
+
+      fullText += (fullText ? '\n' : '') + chunkResult;
+      carryOver = lastNonEmptyLines(chunkResult, 4);
+      updateProgress(i + 1, total, `Fragmento ${i + 1} de ${total} completado`);
     }
 
-    messages = [
-      { role: 'user', content: inputText },
-      { role: 'assistant', content: fullText },
-    ];
+    return fullText;
   }
 
-  throw new Error('El resultado sigue siendo demasiado largo tras varias continuaciones automáticas. Procesa la transcripción por partes más cortas.');
+  const estimatedRounds = estimateRounds(inputText, maxTokens);
+  const fullText = await runWithContinuation({
+    model,
+    systemPrompt: systemPromptBase,
+    userContent: inputText,
+    maxTokens,
+    accessCode,
+    onRound: (round) => {
+      const shownTotal = Math.max(round, estimatedRounds);
+      const label = round === 1
+        ? `Paso 1 de ~${shownTotal}`
+        : `Paso ${round} de ~${shownTotal}: continuando donde quedamos...`;
+      updateProgress(round - 1, shownTotal, label);
+    },
+  });
+  updateProgress(1, 1, 'Completado');
+  return fullText;
 }
 
 $('processBtn').addEventListener('click', async () => {
@@ -755,6 +956,8 @@ $('processBtn').addEventListener('click', async () => {
   const inputText = $('inputText').value;
   const maxTokens = Math.min(parseInt($('maxTokens').value, 10) || 8000, 8000);
   const accessCode = $('accessCode').value.trim();
+  const speedMode = $('speedMode').value;
+  const chunkSize = Math.max(1500, parseInt($('chunkSize').value, 10) || 6000);
 
   if (PROXY_URL.includes('YOUR-HASH')) {
     setStatus('Falta configurar PROXY_URL en el código con la URL real del servicio de Cloud Run desplegado.', 'error');
@@ -763,7 +966,7 @@ $('processBtn').addEventListener('click', async () => {
   if (!profName || !patName) { setStatus('Debes indicar ambas etiquetas de interlocutor.', 'error'); return; }
   if (!inputText.trim()) { setStatus('Pega o carga una transcripción primero.', 'error'); return; }
 
-  const systemPrompt = buildSystemPrompt(profName, patName, removeTimestamps);
+  const systemPromptBase = buildSystemPrompt(profName, patName, removeTimestamps);
 
   $('processBtn').disabled = true;
   setStatus('');
@@ -771,9 +974,18 @@ $('processBtn').addEventListener('click', async () => {
   showBusyPanel();
 
   try {
-    const fullText = await labelTranscript({ model, systemPrompt, inputText, maxTokens, accessCode });
+    const fullText = await labelTranscript({
+      model, systemPromptBase, inputText, maxTokens, accessCode, speedMode, chunkSize,
+    });
     $('output').value = fullText;
-    setStatus('Listo.', 'ok');
+
+    const inputWords = roughWordCount(inputText);
+    const outputWords = roughWordCount(fullText);
+    if (inputWords > 0 && outputWords < inputWords * 0.8) {
+      setStatus(`Listo, pero revisa el resultado: tiene bastantes menos palabras que el original (${outputWords} vs ${inputWords} aprox.), lo que podría indicar contenido omitido.`, 'error');
+    } else {
+      setStatus('Listo.', 'ok');
+    }
   } catch (err) {
     setStatus('Error: ' + err.message, 'error');
   } finally {

@@ -106,15 +106,23 @@ En GitHub: **Settings → Pages → Source → Deploy from a branch → main / (
 
 ## Personalización
 
-- **Paletas de color**: el selector de círculos junto al título permite cambiar entre Kawaii rosa (por defecto), Lavanda, Menta, Durazno y Nocturno (oscuro). La preferencia se guarda en el navegador de cada usuario.
-- **Playlist de concentración**: el botón "♪ Playlist para concentrarte" apunta al enlace de Spotify configurado en el `href` del elemento `#spotifyLink` en `index.html`.
+- **Paletas de color**: el selector de círculos junto al título permite cambiar entre Kawaii rosa (por defecto, con títulos en Mochiy Pop One), Lavanda, Menta, Durazno, Nocturno (oscuro), Pastelería y Café. En todas las paletas excepto la Kawaii, los títulos son más grandes, gruesos, de color y ligeramente inclinados (Fredoka); el texto de cuerpo usa Baloo 2 en todas.
+- **Playlist de concentración**: embebida directamente en el panel "3. Procesar" (iframe responsivo de Spotify, ~7 canciones visibles). Para cambiarla, edita el `src` del `<iframe>` dentro de `.spotify-embed` en `index.html`.
 - **Nombres de interlocutores**: configurables en la propia interfaz, se recuerdan en `localStorage`.
 - **Timestamps**: checkbox para conservarlos o eliminarlos del resultado.
+- **Modo de velocidad**: "Preciso" procesa el documento completo de una vez (más confiable para mantener contexto); "Rápido" lo divide en fragmentos más pequeños (tamaño configurable) para reducir el tiempo de espera en transcripciones muy largas, pasando solo un pequeño resumen de continuidad entre fragmentos en vez de reenviar todo el documento en cada llamada.
+- **Progreso mientras procesa**: barra de porcentaje, indicador de "paso X de ~Y" (o "fragmento X de Y" en modo rápido), y una rotación de haikus clásicos y frases anónimas breves (20 segundos cada uno, con fundido) para acompañar la espera.
+
+## Fidelidad del resultado
+
+- El prompt exige explícitamente que la salida contenga el contenido completo del original, sin resumir ni omitir nada; la única transformación permitida es anteponer la etiqueta del interlocutor (y quitar timestamps si se pidió).
+- Si el modelo se corta por límite de tokens a mitad de una intervención, la app continúa automáticamente (hasta 6 rondas) retomando exactamente donde quedó, en vez de pedirte que subas manualmente el tope de tokens.
+- Como red de seguridad adicional, al terminar la app compara el número de palabras del resultado contra el original; si el resultado tiene muchas menos palabras de las esperadas, muestra una advertencia para que revises manualmente si se omitió contenido (es una heurística aproximada, no una garantía).
 
 ## Notas de seguridad y límites
 
 - El proxy no implementa rate-limiting real (solo tope de `max_tokens` y modelos permitidos). Si compartes la URL públicamente y quieres controlar el gasto, considera Cloud Armor, cuotas de Cloud Run, o el código de acceso opcional (`APP_ACCESS_CODE`).
-- **Documentos muy largos**: se envían en un solo llamado; si el resultado se corta, sube el tope de tokens en Opciones avanzadas o procesa la transcripción por partes.
+- **Documentos muy largos**: usa el modo de velocidad "Rápido" para reducir el tiempo de espera; el modo "Preciso" reenvía el documento completo en cada continuación, lo que puede tardar varios minutos en transcripciones muy extensas.
 - **Ambigüedad real**: si una intervención es imposible de atribuir con el contexto disponible, el modelo la marcará como `[Interlocutor incierto]:` en vez de adivinar.
 - **Ejemplo de entrada**: `example/ejemplo_ficticio.txt` contiene una transcripción ficticia (sin datos reales de ninguna persona) para probar la app. No subas transcripciones reales de pacientes a este repositorio si es público — contienen datos clínicos identificables.
 
