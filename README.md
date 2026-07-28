@@ -4,6 +4,8 @@ App web que etiqueta automáticamente quién habla (profesional / paciente) en t
 
 El frontend es estático (se publica en **GitHub Pages**) y llama a un **proxy propio en Google Cloud Run**, con la clave de Anthropic guardada en **Secret Manager**. La clave **nunca** viaja al navegador, ni queda en el repositorio, ni es visible para quien abra "ver código fuente" de la página pública.
 
+> ¿Vas a seguir desarrollando esto? Lee primero [CONTINUAR.md](CONTINUAR.md) — resume el estado actual, decisiones de diseño, un incidente de costo ya resuelto y las ideas pendientes.
+
 ## Arquitectura
 
 ```
